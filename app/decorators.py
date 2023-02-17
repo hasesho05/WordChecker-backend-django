@@ -3,22 +3,23 @@ from .jwt_token import *
 
 
 def permitGetToken(request):
-    token = request.GET.get('token')
-    if request.method != 'GET':
-        token = request.data.get('token')
+    token = request.GET.get("token")
+    if request.method != "GET":
+        token = request.data.get("token")
 
     return token
 
 
 def getAccount(request):
+    print(request)
     token = permitGetToken(request)
     decoded_token = jwt_decode(token)
     request.account = None
     request.token = None
     request.is_authenticated = False
 
-    if decoded_token['status'] == 'success':
-        account = Account.objects.filter(id=decoded_token['data']['id']).first()
+    if decoded_token["status"] == "success":
+        account = Account.objects.filter(id=decoded_token["data"]["id"]).first()
 
         if account:
             request.account = account

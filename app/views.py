@@ -33,6 +33,8 @@ class AuthenticateView(utils.DisabledCRUDMixin):
 
     @action(detail=False, methods=["post"])
     def authenticated(self, request, *args, **kwargs):
+        print("a")
+        print(request)
         getAccount(request)
         if request.is_authenticated:
             serializer = self.get_serializer(request.account)
@@ -170,7 +172,7 @@ class HistoryViewSet(utils.ModelViewSet):
         return queryset
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().filter(account_id=request.GET["account_id"])
+        queryset = self.get_queryset().filter(id=request.GET["account_id"])
         if self.pagination_class:
             queryset = self.pagination_class().paginate_queryset(queryset, request)
         serializer = self.get_serializer(queryset, many=True)
@@ -216,7 +218,7 @@ class PostViewSet(utils.ModelViewSet):
         return queryset
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().filter(account_id=request.GET["account_id"])
+        queryset = self.get_queryset().filter(id=request.GET["account_id"])
         if self.pagination_class:
             queryset = self.pagination_class().paginate_queryset(queryset, request)
         serializer = self.get_serializer(queryset, many=True)

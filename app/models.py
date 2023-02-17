@@ -16,6 +16,7 @@ class Account(models.Model):
 
     username = models.CharField(verbose_name="ユーザー名", max_length=128)
     email = models.CharField(verbose_name="メールアドレス", max_length=128, unique=True)
+    encrypted_password = models.CharField(verbose_name="パスワード", max_length=128)
     user_icon = models.ImageField(verbose_name="アイコン", upload_to=user_directory_path, null=True, blank=True)
     profile = models.TextField(verbose_name="プロフィール", null=True, blank=True)
     twitter_link = models.CharField(verbose_name="Twitter", max_length=128, null=True, blank=True)

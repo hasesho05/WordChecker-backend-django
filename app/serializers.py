@@ -8,8 +8,8 @@ class AccountSerializer(serializers.HyperlinkedModelSerializer):
         fields = [
             "id",
             "username",
-            "account_id",
             "email",
+            "encrypted_password",
             "user_icon",
             "profile",
             "twitter_link",
