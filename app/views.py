@@ -53,7 +53,7 @@ class AuthenticateView(utils.DisabledCRUDMixin):
         if account and account.encrypted_password == encrypted_password:
             serializer = self.get_serializer(account)
             token = jwt_encode(serializer.data)
-            return Response({"status": "success", "data": {"token": token}})
+            return Response({"status": "success", "token": token, "data": serializer.data})
         else:
             return Response({"status": "failed", "data": {}})
 
@@ -61,6 +61,9 @@ class AuthenticateView(utils.DisabledCRUDMixin):
     def signup(self, request, *args, **kwargs):
         self.validate_signup(request)
         email = request.data.get("email")
+        if Account.objects.filter(email=email).count() != 0:
+            return Response({"status": "failed", "message": "既に登録されているメールアドレスです。"})
+
         encrypted_password = hashlib.sha256(request.data.get("password").encode()).hexdigest()
         username = request.data.get("username")
         Account.objects.create(username=username, email=email, encrypted_password=encrypted_password)
@@ -121,8 +124,7 @@ class AccountViewSet(utils.ModelViewSet):
 
     @permit_denied
     def list(self, request, *args, **kwargs):
-        _permit_require_params(request, params=["account_id"])
-
+        print("a")
         queryset = self.get_queryset()
         queryset = self.queryset_filter(queryset, request.GET)
         serializer = self.get_serializer(queryset, many=True)
@@ -159,6 +161,16 @@ class AccountViewSet(utils.ModelViewSet):
         else:
             _permit_denied()
             # serializer = self.get_serializer(instance, data=request.data, partial=partial)
+
+    # get a user account
+    @action(detail=False, methods=["get"])
+    def get_info(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.GET["id"]).first()
+        if account:
+            serializer = AccountSerializer(account)
+            return Response({"status": "success", "data": serializer.data})
+        else:
+            return Response({"status": "failed", "data": {}})
 
 
 class HistoryViewSet(utils.ModelViewSet):
@@ -218,15 +230,13 @@ class PostViewSet(utils.ModelViewSet):
         return queryset
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().filter(id=request.GET["account_id"])
+        queryset = self.get_queryset().filter(account_id=request.GET["id"])
         if self.pagination_class:
             queryset = self.pagination_class().paginate_queryset(queryset, request)
         serializer = self.get_serializer(queryset, many=True)
         return Response({"status": "success", "data": serializer.data})
 
     def create(self, request, *args, **kwargs):
-        _permit_only_owner(request)
-        print(request.data)
         account = Account.objects.filter(id=request.data["account_id"]).first()
         post = Post.objects.create(
             account=account,
@@ -237,10 +247,27 @@ class PostViewSet(utils.ModelViewSet):
         serializer = self.get_serializer(post)
         return Response({"status": "success", "data": serializer.data})
 
+    @action(detail=False, methods=["get"])
+    def get_post_by_id(self, request, *args, **kwargs):
+        account = self.get_queryset().filter(account_id=request.GET["id"])
+        if account is None:
+            return Response({"status": "ng", "message": "Account not found"})
+
+        serializer = self.get_serializer(account, many=True)
+        return Response({"status": "ok", "data": serializer.data})
+
+    @action(detail=False, methods=["get"])
+    def get_new_posts(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if self.pagination_class:
+            queryset = self.pagination_class().paginate_queryset(queryset, request)
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({"status": "success", "data": serializer.data})
+
     @action(detail=False, methods=["post"])
     def add_like(self, request, *args, **kwargs):
-        # _permit_only_owner(request)
-        account = Account.objects.filter(encrypted_password=request.data["token"]).first()
+        account = Account.objects.filter(id=request.data["account_id"]).first()
         if account is None:
             return Response({"status": "ng", "message": "Account not found"})
         post = Post.objects.filter(id=request.data["post_id"]).first()
@@ -248,15 +275,15 @@ class PostViewSet(utils.ModelViewSet):
             return Response({"status": "ng", "message": "Post not found"})
 
         like = LikePost.objects.create(
-            liked_by=account,
-            like_post=post,
+            account=account,
+            post=post,
         )
         serializer = LikePostSetializer(like)
         return Response({"status": "success", "data": serializer.data})
 
     @action(detail=False, methods=["post"])
     def remove_like(self, request, *args, **kwargs):
-        account = Account.objects.filter(encrypted_password=request.data["token"]).first()
+        account = Account.objects.filter(id=request.data["account_id"]).first()
         if account is None:
             return Response({"status": "ng", "message": "Account not found"})
         post = Post.objects.filter(id=request.data["post_id"]).first()
@@ -264,8 +291,8 @@ class PostViewSet(utils.ModelViewSet):
             return Response({"status": "ng", "message": "Post not found"})
 
         objs = LikePost.objects.filter(
-            liked_by=account,
-            like_post=post,
+            account=account,
+            post=post,
         )
         for item in objs:
             item.delete()
@@ -275,7 +302,7 @@ class PostViewSet(utils.ModelViewSet):
 class LikePostViewSet(utils.ModelViewSet):
     queryset = LikePost.objects.all().order_by("-created_at")
     serializer_class = LikePostSetializer
-    # removed_methods = ["retrieve", "update", "partial_update", "destroy"]
+    removed_methods = ["retrieve", "update", "partial_update", "destroy"]
 
     def create(self, request, *args, **kwargs):
         account = Account.objects.filter(id=request.data["account_id"]).first()
@@ -297,4 +324,67 @@ class LikePostViewSet(utils.ModelViewSet):
 
         for like in likes:
             like.delete()
+        return Response({"status": "success"})
+
+
+class CommentPostViewSet(utils.ModelViewSet):
+    queryset = CommentPost.objects.all().order_by("-created_at")
+    serializer_class = CommentPostSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        queryset = self.queryset
+        queryset = self.queryset_filter(queryset, self.request.GET)
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset().filter(post_id=request.GET["post_id"])
+        if self.pagination_class:
+            queryset = self.pagination_class().paginate_queryset(queryset, request)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+    def create(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.data["account_id"]).first()
+        post = Post.objects.filter(id=request.data["post_id"]).first()
+        comment = CommentPost.objects.create(
+            account=account,
+            post=post,
+            content=request.data["comment"],
+        )
+
+        serializer = self.get_serializer(comment)
+        return Response({"status": "success", "data": serializer.data})
+
+    @action(detail=False, methods=["post"])
+    def add_like(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.data["comment_id"]).first()
+        if account is None:
+            return Response({"status": "ng", "message": "Account not found"})
+        comment = CommentPost.objects.filter(id=request.data["comment_id"]).first()
+        if comment is None:
+            return Response({"status": "ng", "message": "Comment not found"})
+
+        like = LikeComment.objects.create(
+            account=account,
+            comment=comment,
+        )
+        serializer = LikeCommentSerializer(like)
+        return Response({"status": "success", "data": serializer.data})
+
+    @action(detail=False, methods=["post"])
+    def remove_like(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.data["comment_id"]).first()
+        if account is None:
+            return Response({"status": "ng", "message": "Account not found"})
+        comment = CommentPost.objects.filter(id=request.data["comment_id"]).first()
+        if comment is None:
+            return Response({"status": "ng", "message": "Comment not found"})
+
+        objs = LikeComment.objects.filter(
+            account=account,
+            comment=comment,
+        )
+        for item in objs:
+            item.delete()
         return Response({"status": "success"})

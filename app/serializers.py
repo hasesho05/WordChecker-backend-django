@@ -9,7 +9,7 @@ class AccountSerializer(serializers.HyperlinkedModelSerializer):
             "id",
             "username",
             "email",
-            "encrypted_password",
+            "cover_image",
             "user_icon",
             "profile",
             "twitter_link",
@@ -49,3 +49,18 @@ class LikePostSetializer(serializers.ModelSerializer):
     class Meta:
         model = LikePost
         fields = "__all__"
+
+
+class LikeCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LikeComment
+        fields = "__all__"
+
+
+class CommentPostSerializer(serializers.ModelSerializer):
+    account = AccountSerializer()
+    like = LikeCommentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CommentPost
+        fields = ["id", "account", "content", "like", "created_at"]

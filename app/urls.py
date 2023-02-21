@@ -8,6 +8,7 @@ router.register(r"accounts", AccountViewSet, basename="accounts")
 router.register(r"history", HistoryViewSet, basename="history")
 router.register(r"userpost", PostViewSet, basename="userpost")
 router.register(r"like_post", LikePostViewSet, basename="like_post")
+router.register(r"comment_post", CommentPostViewSet, basename="comment_post")
 
 urlpatterns = [
     path("", include(router.urls)),
