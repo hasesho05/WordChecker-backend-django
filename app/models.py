@@ -16,11 +16,14 @@ class Account(models.Model):
 
     username = models.CharField(verbose_name="ユーザー名", max_length=128)
     email = models.CharField(verbose_name="メールアドレス", max_length=128, unique=True)
+    user_id = models.CharField(verbose_name="ユーザーID", max_length=128)
     encrypted_password = models.CharField(verbose_name="パスワード", max_length=128)
     user_icon = models.ImageField(verbose_name="アイコン", upload_to=user_directory_path, null=True, blank=True)
     cover_image = models.ImageField("カバー画像", upload_to=user_directory_path, null=True, blank=True)
     profile = models.TextField(verbose_name="プロフィール", null=True, blank=True)
     twitter_link = models.CharField(verbose_name="Twitter", max_length=128, null=True, blank=True)
+    following = models.ManyToManyField("self", related_name="following_to", symmetrical=False)
+    follower = models.ManyToManyField("self", related_name="follower_by", symmetrical=False)
     created_at = models.DateTimeField(verbose_name="作成日時", default=timezone.now)
     updated_at = models.DateTimeField(verbose_name="更新日時", default=timezone.now)
 

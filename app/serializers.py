@@ -2,25 +2,10 @@ from .models import *
 from rest_framework import serializers
 
 
-class AccountSerializer(serializers.HyperlinkedModelSerializer):
+class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = [
-            "id",
-            "username",
-            "email",
-            "cover_image",
-            "user_icon",
-            "profile",
-            "twitter_link",
-        ]
-
-    def update(self, instance, validated_data):
-        for key, value in validated_data.items():
-            if value or value == "":
-                setattr(instance, key, value)
-        instance.save()
-        return instance
+        fields = "__all__"
 
 
 class HistorySerializer(serializers.ModelSerializer):

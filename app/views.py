@@ -1,4 +1,5 @@
 from django.views import View
+from django.http import JsonResponse
 from rest_framework import viewsets
 from rest_framework import permissions
 from django.db.models import Q
@@ -33,7 +34,6 @@ class AuthenticateView(utils.DisabledCRUDMixin):
 
     @action(detail=False, methods=["post"])
     def authenticated(self, request, *args, **kwargs):
-        print("a")
         print(request)
         getAccount(request)
         if request.is_authenticated:
@@ -122,9 +122,7 @@ class AccountViewSet(utils.ModelViewSet):
     permission_classes = []
     removed_methods = ["partial_update", "destroy"]
 
-    @permit_denied
     def list(self, request, *args, **kwargs):
-        print("a")
         queryset = self.get_queryset()
         queryset = self.queryset_filter(queryset, request.GET)
         serializer = self.get_serializer(queryset, many=True)
@@ -148,24 +146,87 @@ class AccountViewSet(utils.ModelViewSet):
             serializer = self.get_serializer(instance)
         return Response({"status": "success", "data": serializer.data})
 
-    @get_account
-    def update(self, request, *args, **kwargs):
+    def put(self, request, pk, *args, **kwargs):
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
+        data = request.data
+        update_data = {}
+        for key, value in data.items():
+            if key in ["image", "cover_image"] and value == "":
+                continue
+            else:
+                update_data[key] = value
+        serializer = self.get_serializer(instance, data=update_data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
 
-        if request.is_authenticated and request.account.id == instance.id:
-            serializer = AccountSerializer(instance, data=request.data, partial=partial, context={"request": request})
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response({"status": "success", "data": serializer.data})
-        else:
-            _permit_denied()
-            # serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        return Response({"status": "success", "data": serializer.data})
 
-    # get a user account
     @action(detail=False, methods=["get"])
     def get_info(self, request, *args, **kwargs):
         account = Account.objects.filter(id=request.GET["id"]).first()
+        if account:
+            serializer = AccountSerializer(account)
+            return Response({"status": "success", "data": serializer.data})
+        else:
+            return Response({"status": "failed", "data": {}})
+
+    @action(detail=False, methods=["get"])
+    def following(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.GET["account_id"]).first()
+        if account:
+            serializer = AccountSerializer(account.following.all(), many=True)
+            return Response({"status": "success", "data": serializer.data})
+        else:
+            return Response({"status": "failed", "data": {}})
+
+    @action(detail=False, methods=["get"])
+    def followers(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.GET["account_id"]).first()
+        if account:
+            serializer = AccountSerializer(account.followers.all(), many=True)
+            return Response({"status": "success", "data": serializer.data})
+        else:
+            return Response({"status": "failed", "data": {}})
+
+    @action(detail=False, methods=["post"])
+    def follow(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.data["account_id"]).first()
+        following = Account.objects.filter(id=request.data["following_id"]).first()
+        if account and following:
+            account.following.add(following)
+            following.follower.add(account)
+            return Response({"status": "success"})
+        else:
+            return Response({"status": "failed"})
+
+    @action(detail=False, methods=["post"])
+    def unfollow(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.data["account_id"]).first()
+        following = Account.objects.filter(id=request.data["following_id"]).first()
+        if account and following:
+            account.following.remove(following)
+            following.follower.remove(account)
+            return Response({"status": "success"})
+        else:
+            return Response({"status": "failed"})
+
+    @action(detail=False, methods=["put"])
+    def edit_profile(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.data["account_id"]).first()
+        if account:
+            account.profile = request.data["profile"]
+            account.user_icon = request.data["image"]
+            account.cover_image = request.data["cover_image"]
+            account.save()
+            return Response({"status": "success"})
+        else:
+            return Response({"status": "failed"})
+
+    # get_userdata_by_user_id
+    @action(detail=False, methods=["post"])
+    def get_userdata_by_user_id(self, request, *args, **kwargs):
+        account = Account.objects.filter(user_id=request.data["user_id"]).first()
         if account:
             serializer = AccountSerializer(account)
             return Response({"status": "success", "data": serializer.data})
@@ -388,3 +449,33 @@ class CommentPostViewSet(utils.ModelViewSet):
         for item in objs:
             item.delete()
         return Response({"status": "success"})
+
+    # get_comments
+    @action(detail=False, methods=["post"])
+    def get_comments(self, request, *args, **kwargs):
+        post = Post.objects.filter(id=request.data["post_id"]).first()
+        if post is None:
+            return Response({"status": "ng", "message": "Post not found"})
+        comments = CommentPost.objects.filter(post=post).order_by("-created_at")
+        serializer = self.get_serializer(comments, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+
+class SearchViewSet(View):
+    def get(self, request, *args, **kwargs):
+        query = ""
+        if "query" in request.GET.keys():
+            query = request.GET["query"]
+        items = Post.objects.filter(Q(content__icontains=query) | Q(account__username__icontains=query))
+        accounts = [item.account for item in items]
+        accounts = list(set(accounts))
+        return JsonResponse(
+            {
+                "status": "success",
+                "data": {
+                    "query": query,
+                    "posts": PostSerializer(items, many=True).data,
+                    "accounts": AccountSerializer(accounts, many=True).data,
+                },
+            }
+        )

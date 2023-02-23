@@ -13,4 +13,5 @@ router.register(r"comment_post", CommentPostViewSet, basename="comment_post")
 urlpatterns = [
     path("", include(router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
+    path("search/", SearchViewSet.as_view(), name="search"),
 ]
