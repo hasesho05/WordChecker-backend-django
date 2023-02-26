@@ -25,10 +25,8 @@ ALLOWED_HOSTS = ["localhost", "*"]
 CSRF_TRUSTED_ORIGINS = ["http://localhost:8000"]
 
 # CORS settings
-CORS_ORIGIN_ALLOW_ALL = True
-# CORS_ORIGIN_WHITELIST = (
-#     'http://localhost:3000',
-# )
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_WHITELIST = ("http://localhost:3000",)
 
 
 # Application definition

@@ -291,9 +291,7 @@ class PostViewSet(utils.ModelViewSet):
         return queryset
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().filter(account_id=request.GET["id"])
-        if self.pagination_class:
-            queryset = self.pagination_class().paginate_queryset(queryset, request)
+        queryset = Post.objects.filter(account_id=request.GET["id"])
         serializer = self.get_serializer(queryset, many=True)
         return Response({"status": "success", "data": serializer.data})
 
@@ -320,6 +318,15 @@ class PostViewSet(utils.ModelViewSet):
     @action(detail=False, methods=["get"])
     def get_new_posts(self, request, *args, **kwargs):
         queryset = self.get_queryset()
+        if self.pagination_class:
+            queryset = self.pagination_class().paginate_queryset(queryset, request)
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({"status": "success", "data": serializer.data})
+
+    @action(detail=False, methods=["get"])
+    def get_popular_posts(self, request, *args, **kwargs):
+        queryset = self.get_queryset().annotate(num_likes=Count("like")).order_by("-num_likes")
         if self.pagination_class:
             queryset = self.pagination_class().paginate_queryset(queryset, request)
         serializer = self.get_serializer(queryset, many=True)
@@ -450,7 +457,6 @@ class CommentPostViewSet(utils.ModelViewSet):
             item.delete()
         return Response({"status": "success"})
 
-    # get_comments
     @action(detail=False, methods=["post"])
     def get_comments(self, request, *args, **kwargs):
         post = Post.objects.filter(id=request.data["post_id"]).first()
