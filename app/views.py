@@ -64,9 +64,12 @@ class AuthenticateView(utils.DisabledCRUDMixin):
         if Account.objects.filter(email=email).count() != 0:
             return Response({"status": "failed", "message": "既に登録されているメールアドレスです。"})
 
+        user_id = request.data.get("user_id")
+        if Account.objects.filter(user_id=user_id).count() != 0:
+            return Response({"status": "failed", "message": "既に登録されているユーザーIDです。"})
         encrypted_password = hashlib.sha256(request.data.get("password").encode()).hexdigest()
         username = request.data.get("username")
-        Account.objects.create(username=username, email=email, encrypted_password=encrypted_password)
+        Account.objects.create(username=username, user_id=user_id, email=email, encrypted_password=encrypted_password)
 
         return self.login(request, *args, **kwargs)
 
@@ -219,7 +222,8 @@ class AccountViewSet(utils.ModelViewSet):
             account.user_icon = request.data["image"]
             account.cover_image = request.data["cover_image"]
             account.save()
-            return Response({"status": "success"})
+            serializer = AccountSerializer(account)
+            return Response({"status": "success", "data": serializer.data})
         else:
             return Response({"status": "failed"})
 

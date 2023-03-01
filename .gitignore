@@ -181,3 +181,7 @@ cython_debug/
 .vscode/settings.json
 vendor/
 
+*.json
+bin
+media
+langlink/lib

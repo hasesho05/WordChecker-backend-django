@@ -3,7 +3,7 @@ import datetime
 import time
 
 
-JWT_SECRETKEY = "wordChecker_password"
+JWT_SECRETKEY = "langlink_password"
 
 
 def jwt_encode(data, hours=24 * 7):  # expires in 7 days(24 hours times 7) by default

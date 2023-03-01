@@ -22,8 +22,8 @@ class Account(models.Model):
     cover_image = models.ImageField("カバー画像", upload_to=user_directory_path, null=True, blank=True)
     profile = models.TextField(verbose_name="プロフィール", null=True, blank=True)
     twitter_link = models.CharField(verbose_name="Twitter", max_length=128, null=True, blank=True)
-    following = models.ManyToManyField("self", related_name="following_to", symmetrical=False)
-    follower = models.ManyToManyField("self", related_name="follower_by", symmetrical=False)
+    following = models.ManyToManyField("self", related_name="following_to", symmetrical=False, null=True, blank=True)
+    follower = models.ManyToManyField("self", related_name="follower_by", symmetrical=False, null=True, blank=True)
     created_at = models.DateTimeField(verbose_name="作成日時", default=timezone.now)
     updated_at = models.DateTimeField(verbose_name="更新日時", default=timezone.now)
 

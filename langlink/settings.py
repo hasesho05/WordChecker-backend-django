@@ -56,7 +56,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 ]
 
-ROOT_URLCONF = "wordChecker.urls"
+ROOT_URLCONF = "langlink.urls"
 
 TEMPLATES = [
     {
@@ -74,7 +74,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "wordChecker.wsgi.application"
+WSGI_APPLICATION = "langlink.wsgi.application"
 
 
 # Database
@@ -118,9 +118,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "ja"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Tokyo"
 
 USE_I18N = True
 
@@ -152,11 +152,11 @@ REST_FRAMEWORK = {
 }
 
 # AWS
-# DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-# AWS_QUERYSTRING_AUTH = False
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+AWS_QUERYSTRING_AUTH = False
 
-# AWS_S3_REGION_NAME = os.environ["AWS_S3_REGION_NAME"]
-# AWS_STORAGE_BUCKET_NAME = os.environ["AWS_S3_BUCKET_NAME"]
+AWS_S3_REGION_NAME = os.environ["AWS_S3_REGION_NAME"]
+AWS_STORAGE_BUCKET_NAME = os.environ["AWS_S3_BUCKET_NAME"]
 
 # Others
 FRONT_URL = os.environ["FRONT_URL"]
