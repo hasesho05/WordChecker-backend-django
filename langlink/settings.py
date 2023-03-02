@@ -20,7 +20,7 @@ if os.environ["DEBUG"] == "true":
 else:
     DEBUG = False
 
-ALLOWED_HOSTS = ["localhost", "*"]
+ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = ["http://localhost:8000"]
 
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -131,7 +132,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
@@ -160,3 +160,7 @@ AWS_STORAGE_BUCKET_NAME = os.environ["AWS_S3_BUCKET_NAME"]
 
 # Others
 FRONT_URL = os.environ["FRONT_URL"]
+
+SUPERUSER_NAME = os.environ["SUPERUSER_NAME"]
+SUPERUSER_EMAIL = os.environ["SUPERUSER_EMAIL"]
+SUPERUSER_PASSWORD = os.environ["SUPERUSER_PASSWORD"]
