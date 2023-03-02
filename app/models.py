@@ -76,7 +76,7 @@ class CommentPost(models.Model):
     updated_at = models.DateTimeField(verbose_name="更新日時", default=timezone.now)
 
     def __str__(self):
-        return f"{self.id} | {self.content} | {self.account.account_id}"
+        return f"{self.id} | {self.content} | {self.account.username}"
 
 
 class LikeComment(models.Model):
@@ -104,6 +104,33 @@ class History(models.Model):
 
     def __str__(self):
         return f"{self.id} | {self.account.username} | {self.word}"
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+NOTIFICATION_TYPE = (
+    ("like", "いいね"),
+    ("comment", "コメント"),
+    ("follow", "フォロー"),
+)
+
+
+class Notification(models.Model):
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="notifications", null=True, blank=True)
+    account_from = models.ForeignKey(
+        Account, on_delete=models.CASCADE, related_name="notifications2", null=True, blank=True
+    )
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="notifications", null=True, blank=True)
+    comment = models.ForeignKey(
+        CommentPost, on_delete=models.CASCADE, related_name="notifications", null=True, blank=True
+    )
+    types = models.CharField(verbose_name="通知タイプ", max_length=50, choices=NOTIFICATION_TYPE, default="like_post")
+    is_read = models.BooleanField(verbose_name="既読", default=False)
+    created_at = models.DateTimeField(verbose_name="作成日時", default=timezone.now)
+
+    def __str__(self):
+        return f"{self.account.username} | {self.types} | {self.is_read}"
 
     class Meta:
         ordering = ["-created_at"]

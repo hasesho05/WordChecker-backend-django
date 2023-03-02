@@ -9,6 +9,7 @@ router.register(r"history", HistoryViewSet, basename="history")
 router.register(r"userpost", PostViewSet, basename="userpost")
 router.register(r"like_post", LikePostViewSet, basename="like_post")
 router.register(r"comment_post", CommentPostViewSet, basename="comment_post")
+router.register(r"notification", NotificationViewSet, basename="notification")
 
 urlpatterns = [
     path("", include(router.urls)),

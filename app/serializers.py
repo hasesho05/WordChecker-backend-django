@@ -49,3 +49,12 @@ class CommentPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommentPost
         fields = ["id", "account", "content", "like", "created_at"]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    account_from = AccountSerializer()
+    post = PostSerializer()
+
+    class Meta:
+        model = Notification
+        fields = "__all__"

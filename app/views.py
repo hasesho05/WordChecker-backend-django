@@ -199,6 +199,11 @@ class AccountViewSet(utils.ModelViewSet):
         if account and following:
             account.following.add(following)
             following.follower.add(account)
+            Notification.objects.create(
+                account=following,
+                account_from=account,
+                types="follow",
+            )
             return Response({"status": "success"})
         else:
             return Response({"status": "failed"})
@@ -210,6 +215,9 @@ class AccountViewSet(utils.ModelViewSet):
         if account and following:
             account.following.remove(following)
             following.follower.remove(account)
+            notification = Notification.objects.filter(account=following, account_from=account, types="follow").first()
+            if notification:
+                notification.delete()
             return Response({"status": "success"})
         else:
             return Response({"status": "failed"})
@@ -350,6 +358,12 @@ class PostViewSet(utils.ModelViewSet):
             account=account,
             post=post,
         )
+        Notification.objects.create(
+            account=post.account,
+            account_from=account,
+            post=post,
+            types="like",
+        )
         serializer = LikePostSetializer(like)
         return Response({"status": "success", "data": serializer.data})
 
@@ -425,6 +439,8 @@ class CommentPostViewSet(utils.ModelViewSet):
             content=request.data["comment"],
         )
 
+        Notification.objects.create(account=post.account, account_from=account, post=post, types="comment")
+
         serializer = self.get_serializer(comment)
         return Response({"status": "success", "data": serializer.data})
 
@@ -489,3 +505,46 @@ class SearchViewSet(View):
                 },
             }
         )
+
+
+class NotificationViewSet(utils.ModelViewSet):
+    queryset = Notification.objects.all().order_by("-created_at")
+    serializer_class = NotificationSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        queryset = self.queryset
+        queryset = self.queryset_filter(queryset, self.request.GET)
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset().filter(account_id=request.GET["account_id"])
+        if self.pagination_class:
+            queryset = self.pagination_class().paginate_queryset(queryset, request)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+    def create(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.data["account_id"]).first()
+        notification = Notification.objects.create(
+            account=account,
+            content=request.data["content"],
+            type=request.data["type"],
+            post_id=request.data["post_id"],
+        )
+
+        serializer = self.get_serializer(notification)
+        return Response({"status": "success", "data": serializer.data})
+
+    @action(detail=False, methods=["post"])
+    def add_read_notification(self, request, *args, **kwargs):
+        account = Account.objects.filter(id=request.data["account_id"]).first()
+        if account is None:
+            return Response({"status": "ng", "message": "Account not found"})
+        notifications = Notification.objects.filter(account=account)
+
+        for notification in notifications:
+            notification.is_read = True
+            notification.save()
+
+        return Response({"status": "success"})
