@@ -1,8 +1,5 @@
 boto3==1.24.2
 Django==4.1.1
-df-static
-dh-database-url
-django-ckeditor==6.5.1
 django-cors-headers==3.13.0
 django-storages==1.12.3
 djangorestframework==3.13.1
@@ -16,5 +13,4 @@ PyJWT==2.5.0
 python-dotenv==0.21.0
 python-environ==0.4.54
 reportlab==3.6.12
-drf-spectacular==0.12
-whitenoise==5.5.0
+drf_spectacular==0.20.0
