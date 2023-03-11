@@ -19,3 +19,6 @@ server {
                 proxy_pass http://unix:/home/ubuntu/langlink-backend/wordChecker.sock;
         }
 }
+=======
+docker exec -it langlink-backend /bin/bash
+
